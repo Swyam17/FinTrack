@@ -13,20 +13,26 @@
 
 ### 💎 Premium Interface
 - **Glassmorphism UI:** Stunning frosted-glass effect with clean animations using Framer Motion.
-- **Dynamic Dashboard:** Real-time calculation of total balance, income, and expenses with currency conversion support!
+- **Dynamic Dashboard:** Real-time calculation of total balance, income, and expenses with **global currency support** (USD, INR, EUR, GBP).
 
-### 📈 Smart Investment Portfolio
-- **Asset Tracker:** Live price monitoring for **Gold (🏆)**, **Silver (💍)**, **Bitcoin**, and **Ethereum**.
+### 📈 Real-Time Asset Tracking
+- **Live Market Feed:** Background tracking system refreshes prices every **30 seconds**.
+- **Asset Coverage:** Monitor **Gold (🏆)**, **Silver (💍)**, **Bitcoin**, **Ethereum**, **BNB**, and **XRP** in your selected currency.
 - **Instant Buy:** One-click investment logging—select an asset, enter the units, and the app automatically logs the purchase using live market rates.
 
 ### 🛡️ Secure Infrastructure
 - **Hybrid Database:** Uses **MySQL** for robust user session management and **MongoDB** for flexible, high-performance transaction storage.
 - **Blockchain Ledger:** Every transaction is cryptographically hashed (SHA-256) to ensure transparency and prevent data tampering.
 
-### 🤖 Intelligence & Social
-- **Budget Alerts:** Immediate visual notifications when your spending exceeds 50%, 75%, or 100% of your total income.
-- **AI Insights:** Automated financial advice based on your current savings rate and spending categories.
-- **Savings Leaderboard 🏆:** Opt-in to the community and compete globally for the highest savings rate!
+### 🤖 FinBot: AI Financial Assistant
+- **Smarter Insights:** Ask about "savings" or "managing money" for specialized advice using the 50/30/20 rule and category analysis.
+- **Market Recommendations:** Get instant price checks and investment suggestions via chat.
+- **Intent Recognition:** Understands greetings and financial queries with personalized, context-aware responses.
+
+### 🤝 Strategic Insurance Partnership
+- **Integrated Protection:** Direct access to **Tata AIA Insurance** plans within the dashboard and sidebar.
+- **Verified Recommendations:** FinBot proactively suggests insurance for long-term wealth security during investment planning.
+- **Promoted Offers:** Premium visual banners for exclusive user-only insurance eligibility checks.
 
 ---
 
