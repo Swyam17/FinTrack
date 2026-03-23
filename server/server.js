@@ -18,9 +18,10 @@ mongoose.connect(MONGO_URI)
   .then(() => console.log('MongoDB Connected'))
   .catch(err => console.error('MongoDB error:', err));
 
-// MySQL connection pool
+// MySQL connection pool singleton
 let pool;
-const initMySQL = async () => {
+const getPool = async () => {
+    if (pool) return pool;
     try {
         pool = await mysql.createPool({
             host: process.env.MYSQL_HOST || 'localhost',
@@ -29,24 +30,16 @@ const initMySQL = async () => {
             database: process.env.MYSQL_DB || 'dailyexpense',
             waitForConnections: true,
             connectionLimit: 10,
-            queueLimit: 0
+            queueLimit: 0,
+            ssl: process.env.MYSQL_SSL ? JSON.parse(process.env.MYSQL_SSL) : undefined
         });
-        
-        // --- AUTO-FIX DATABASE SCHEMA ---
-        try {
-            await pool.execute('ALTER TABLE users MODIFY password VARCHAR(255)');
-            await pool.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS optInLeaderboard TINYINT(1) DEFAULT 0');
-            console.log('MySQL: Schema auto-updated (Leaderboard and Password fix)');
-        } catch (err) {
-            // Ignore if errors (e.g. column already exists)
-        }
-        
-        console.log('MySQL Pool Created');
+        console.log('MySQL Pool Created Successfuly');
+        return pool;
     } catch (err) {
         console.error('MySQL init error:', err);
+        throw new Error('Database connection failed. Check your environment variables.');
     }
 };
-initMySQL();
 
 const crypto = require('crypto');
 
@@ -81,26 +74,27 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
-// --- Auth Routes (MySQL) ---
 app.post('/api/auth/register', async (req, res) => {
     const { firstname, lastname, email, password } = req.body;
     try {
+        const db = await getPool();
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [result] = await pool.execute(
+        const [result] = await db.execute(
             'INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)',
             [firstname, lastname, email, hashedPassword]
         );
         res.status(201).json({ message: 'User registered', userId: result.insertId });
     } catch (err) {
         console.error('Register Error:', err);
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ error: "Failed to register. " + err.message });
     }
 });
 
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
     try {
-        const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [email]);
+        const db = await getPool();
+        const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
         if (rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
         
         const user = rows[0];
@@ -118,7 +112,8 @@ app.post('/api/auth/login', async (req, res) => {
 app.post('/api/auth/leaderboard/opt-in', authenticateToken, async (req, res) => {
     const { optIn } = req.body;
     try {
-        await pool.execute('UPDATE users SET optInLeaderboard = ? WHERE user_id = ?', [optIn ? 1 : 0, req.user.id]);
+        const db = await getPool();
+        await db.execute('UPDATE users SET optInLeaderboard = ? WHERE user_id = ?', [optIn ? 1 : 0, req.user.id]);
         res.json({ message: 'Preference updated' });
     } catch (err) {
         console.error('Opt-in Error:', err);
@@ -225,9 +220,10 @@ app.get('/api/monthly-stats', authenticateToken, async (req, res) => {
 // --- Leaderboard Routes ---
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const [users] = await pool.query('SELECT user_id AS id, firstname FROM users WHERE optInLeaderboard = 1');
+        const db = await getPool();
+        const [users] = await db.query('SELECT user_id AS id, firstname FROM users WHERE optInLeaderboard = 1');
         const leaderboard = [];
-
+ 
         for (const user of users) {
             const stats = await Expense.aggregate([
                 { $match: { userId: user.id.toString() } },
@@ -237,7 +233,7 @@ app.get('/api/leaderboard', async (req, res) => {
                     totalExpense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
                 }}
             ]);
-
+ 
             const s = stats[0] || { totalIncome: 0, totalExpense: 0 };
             const savingPercent = s.totalIncome > 0 ? ((s.totalIncome - s.totalExpense) / s.totalIncome) * 100 : 0;
             
@@ -246,7 +242,7 @@ app.get('/api/leaderboard', async (req, res) => {
                 savingPercent: Math.max(0, savingPercent).toFixed(2)
             });
         }
-
+ 
         res.json(leaderboard.sort((a, b) => b.savingPercent - a.savingPercent));
     } catch (err) {
         res.status(500).json({ error: err.message });

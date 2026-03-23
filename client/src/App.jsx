@@ -149,7 +149,9 @@ const App = () => {
                 alert('Registration successful! Please login.');
             }
         } catch (err) {
-            alert(err.response?.data?.message || err.response?.data?.error || 'Auth failed');
+            const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'Auth failed';
+            alert(`Auth Error: ${typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg}`);
+            console.error('Authentication detailed error:', err.response?.data || err);
         }
     };
 
@@ -179,7 +181,8 @@ const App = () => {
             alert(`Successfully logged investment of ${investAmount} units of ${assetName}!`);
             await fetchData();
         } catch (err) {
-            alert('Error recording investment');
+            const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+            alert(`Investment Error: ${typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg}`);
         }
     };
 
@@ -196,7 +199,8 @@ const App = () => {
             setNewTitle(''); setNewAmount('');
             await fetchData();
         } catch (err) {
-            alert('Error adding transaction');
+            const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message;
+            alert(`Transaction Error: ${typeof errorMsg === 'object' ? JSON.stringify(errorMsg) : errorMsg}`);
         }
     };
 
