@@ -9,6 +9,15 @@
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "clean:legacy": "mkdir legacy 2>nul & move *.php legacy & move css legacy & move js legacy & move uploads legacy"
   },
+  "dependencies": {
+    "express": "^4.18.2",
+    "mongoose": "^7.5.0",
+    "mysql2": "^3.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
   "devDependencies": {
     "concurrently": "^8.2.0"
   }
