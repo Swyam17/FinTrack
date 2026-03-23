@@ -1,0 +1,15 @@
+{
+  "name": "personal-expense-tracker-fullstack",
+  "version": "2.0.0",
+  "description": "Premium Full-Stack Expense Tracker with AI Insights, Multi-currency support, and modern Glassmorphism UI.",
+  "scripts": {
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "clean:legacy": "mkdir legacy 2>nul & move *.php legacy & move css legacy & move js legacy & move uploads legacy"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
