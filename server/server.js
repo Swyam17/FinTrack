@@ -28,12 +28,37 @@ const getPool = async () => {
             user: process.env.MYSQL_USER || 'root',
             password: process.env.MYSQL_PASSWORD || '',
             database: process.env.MYSQL_DB || 'dailyexpense',
+            port: process.env.MYSQL_PORT || 3306,
             waitForConnections: true,
             connectionLimit: 10,
             queueLimit: 0,
             ssl: process.env.MYSQL_SSL ? JSON.parse(process.env.MYSQL_SSL) : undefined
         });
-        console.log('MySQL Pool Created Successfuly');
+
+        // --- AUTOMATED SCHEMA INITIALIZATION ---
+        try {
+            // Ensure users table exists
+            await pool.execute(`
+                CREATE TABLE IF NOT EXISTS users (
+                    user_id INT AUTO_INCREMENT PRIMARY KEY,
+                    firstname VARCHAR(50) NOT NULL,
+                    lastname VARCHAR(50) NOT NULL,
+                    email VARCHAR(100) UNIQUE NOT NULL,
+                    password VARCHAR(255) NOT NULL,
+                    optInLeaderboard TINYINT(1) DEFAULT 0
+                )
+            `);
+            
+            // Fix legacy issues/updates
+            await pool.execute('ALTER TABLE users MODIFY password VARCHAR(255)');
+            await pool.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS optInLeaderboard TINYINT(1) DEFAULT 0');
+            
+            console.log('MySQL: Database Schema Verified & Updated Successfully');
+        } catch (schemaErr) {
+            console.warn('MySQL Schema Check Warning (May already be updated):', schemaErr.message);
+        }
+
+        console.log('MySQL Pool Created Successfully');
         return pool;
     } catch (err) {
         console.error('MySQL init error:', err);
