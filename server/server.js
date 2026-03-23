@@ -109,6 +109,20 @@ app.post('/api/auth/login', async (req, res) => {
     }
 });
 
+app.post('/api/auth/forgot-password', async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const db = await getPool();
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const [result] = await db.execute('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+        res.json({ message: 'Password updated successfully! Please login with your new password.' });
+    } catch (err) {
+        console.error('Forgot Password Error:', err);
+        res.status(500).json({ error: "Failed to reset password. " + err.message });
+    }
+});
+
 app.post('/api/auth/leaderboard/opt-in', authenticateToken, async (req, res) => {
     const { optIn } = req.body;
     try {

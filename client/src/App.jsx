@@ -143,10 +143,14 @@ const App = () => {
                 localStorage.setItem('token', res.data.token);
                 setToken(res.data.token);
                 setUser(res.data.user);
-            } else {
+            } else if (authMode === 'register') {
                 await axios.post('/api/auth/register', { firstname, lastname, email, password });
                 setAuthMode('login');
                 alert('Registration successful! Please login.');
+            } else if (authMode === 'forgot') {
+                await axios.post('/api/auth/forgot-password', { email, password });
+                setAuthMode('login');
+                alert('Password reset successful! Please login with your new password.');
             }
         } catch (err) {
             const errorMsg = err.response?.data?.message || err.response?.data?.error || err.message || 'Auth failed';
@@ -344,7 +348,9 @@ For long-term security, we also highly recommend checking out Tata AIA Insurance
         return (
             <div className="auth-container" style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center' }}>
                 <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass-card" style={{ padding: '40px', width: '100%', maxWidth: '400px' }}>
-                    <h1 style={{ textAlign: 'center' }}>{authMode === 'login' ? 'Login' : 'Join Us'}</h1>
+                    <h1 style={{ textAlign: 'center' }}>
+                        {authMode === 'login' ? 'Login' : authMode === 'register' ? 'Join Us' : 'Reset Password'}
+                    </h1>
                     <form onSubmit={handleAuth} style={{ marginTop: '24px' }}>
                         {authMode === 'register' && (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
@@ -353,12 +359,31 @@ For long-term security, we also highly recommend checking out Tata AIA Insurance
                             </div>
                         )}
                         <div className="input-group"><label>Email</label><input type="email" value={email} onChange={e => setEmail(e.target.value)} required /></div>
-                        <div className="input-group"><label>Password</label><input type="password" value={password} onChange={e => setPassword(e.target.value)} required /></div>
-                        <button className="btn btn-primary" style={{ width: '100%', marginTop: '16px' }}>{authMode === 'login' ? 'Login' : 'Sign Up'}</button>
+                        <div className="input-group">
+                            <label>{authMode === 'forgot' ? 'New Password' : 'Password'}</label>
+                            <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
+                        </div>
+                        <button className="btn btn-primary" style={{ width: '100%', marginTop: '16px' }}>
+                            {authMode === 'login' ? 'Login' : authMode === 'register' ? 'Sign Up' : 'Update Password'}
+                        </button>
                     </form>
-                    <p style={{ textAlign: 'center', marginTop: '24px', cursor: 'pointer', color: 'var(--primary)' }} onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
-                        {authMode === 'login' ? "New here? Create account" : "Have an account? Login"}
-                    </p>
+                    
+                    <div style={{ marginTop: '24px', textAlign: 'center' }}>
+                        {authMode === 'login' ? (
+                            <>
+                                <p style={{ cursor: 'pointer', color: 'var(--primary)', marginBottom: '8px' }} onClick={() => setAuthMode('register')}>
+                                    New here? Create account
+                                </p>
+                                <p style={{ cursor: 'pointer', color: 'var(--text-dim)', fontSize: '0.9rem' }} onClick={() => setAuthMode('forgot')}>
+                                    Forgot Password?
+                                </p>
+                            </>
+                        ) : (
+                            <p style={{ cursor: 'pointer', color: 'var(--primary)' }} onClick={() => setAuthMode('login')}>
+                                Back to Login
+                            </p>
+                        )}
+                    </div>
                 </motion.div>
             </div>
         );
