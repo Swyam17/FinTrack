@@ -1,64 +1,126 @@
 # ✨ FINTRACK: Premium Full-Stack Expense & Asset Tracker
 
-[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![MySQL](https://img.shields.io/badge/MySQL-00000f?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
+[![React](https://img.shields.io/badge/React-20232A?style=for-the-badge\&logo=react\&logoColor=61DAFB)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge\&logo=node.js\&logoColor=white)](https://nodejs.org/)
+[![MySQL](https://img.shields.io/badge/MySQL-00000f?style=for-the-badge\&logo=mysql\&logoColor=white)](https://www.mysql.com/)
+[![MongoDB](https://img.shields.io/badge/MongoDB-4EA94B?style=for-the-badge\&logo=mongodb\&logoColor=white)](https://www.mongodb.com/)
 
-**FINTRACK** is a modern, full-stack financial management platform designed with a high-end Glassmorphism aesthetic. It goes beyond simple expense tracking by integrating live asset prices for precious metals and cryptocurrencies, allowing users to build and monitor their investment portfolios in real-time.
+---
+
+## 💡 Overview
+
+**FINTRACK** is a modern, full-stack financial management platform designed with a premium **Glassmorphism UI**.
+It goes beyond traditional expense tracking by integrating **real-time asset tracking**, **AI-powered insights**, and **secure transaction systems**, enabling users to manage both **expenses and investments in one place**.
 
 ---
 
 ## 🌟 Key Features
 
-### 💎 Premium Interface
-- **Glassmorphism UI:** Stunning frosted-glass effect with clean animations using Framer Motion.
-- **Dynamic Dashboard:** Real-time calculation of total balance, income, and expenses with **global currency support** (USD, INR, EUR, GBP).
+### 💎 Premium User Experience
+
+* Glassmorphism UI with smooth animations using **Framer Motion**
+* Fully responsive and visually rich dashboard
+* Real-time balance updates (Income, Expenses, Net Worth)
+* 🌍 Multi-currency support: USD, INR, EUR, GBP
+
+---
 
 ### 📈 Real-Time Asset Tracking
-- **Live Market Feed:** Background tracking system refreshes prices every **30 seconds**.
-- **Asset Coverage:** Monitor **Gold (🏆)**, **Silver (💍)**, **Bitcoin**, **Ethereum**, **BNB**, and **XRP** in your selected currency.
-- **Instant Buy:** One-click investment logging—select an asset, enter the units, and the app automatically logs the purchase using live market rates.
 
-### 🛡️ Secure Infrastructure
-- **Hybrid Database:** Uses **MySQL** for robust user session management and **MongoDB** for flexible, high-performance transaction storage.
-- **Blockchain Ledger:** Every transaction is cryptographically hashed (SHA-256) to ensure transparency and prevent data tampering.
+* 🔄 Auto-refresh market data every **30 seconds**
+* Supports:
+
+  * 🥇 Gold & Silver
+  * ₿ Bitcoin
+  * Ξ Ethereum
+  * BNB, XRP
+* ⚡ One-click investment logging using live prices
+
+---
+
+### 🛡️ Secure & Scalable Architecture
+
+* Hybrid database architecture:
+
+  * **MySQL** → Authentication & user sessions
+  * **MongoDB** → Transactions & financial data
+* 🔐 JWT-based authentication
+* 🔒 Password hashing with Bcrypt
+* ⛓️ SHA-256 hashing for transaction integrity (blockchain-inspired)
+
+---
 
 ### 🤖 FinBot: AI Financial Assistant
-- **Smarter Insights:** Ask about "savings" or "managing money" for specialized advice using the 50/30/20 rule and category analysis.
-- **Market Recommendations:** Get instant price checks and investment suggestions via chat.
-- **Intent Recognition:** Understands greetings and financial queries with personalized, context-aware responses.
 
-### 🤝 Strategic Insurance Partnership
-- **Integrated Protection:** Direct access to **Tata AIA Insurance** plans within the dashboard and sidebar.
-- **Verified Recommendations:** FinBot proactively suggests insurance for long-term wealth security during investment planning.
-- **Promoted Offers:** Premium visual banners for exclusive user-only insurance eligibility checks.
+* 📊 Smart financial insights (50/30/20 rule)
+* 💬 Conversational query handling
+* 📈 Real-time price suggestions & investment tips
+* 🧠 Intent recognition for personalized responses
+
+---
+
+### 🤝 Insurance Integration
+
+* Integration with **Tata AIA Insurance**
+* Context-aware suggestions by FinBot
+* Embedded UI for exploring insurance plans
+* Focus on long-term financial security
 
 ---
 
 ## 🚀 Tech Stack
 
-- **Frontend:** React 18, Vite, Framer Motion, Lucide Icons, Recharts, Axios.
-- **Backend:** Node.js, Express.js, JWT, Bcrypt.
-- **Databases:** MySQL (User Auth), MongoDB (Transactions).
-- **APIs:** Coingecko (Crypto/Metals), ExchangeRate-API (Currency Conversion).
+**Frontend**
+
+* React 18
+* Vite
+* Framer Motion
+* Recharts
+* Axios
+* Lucide Icons
+
+**Backend**
+
+* Node.js
+* Express.js
+* JWT Authentication
+* Bcrypt
+
+**Database**
+
+* MySQL (User Management)
+* MongoDB (Transactions)
+
+**APIs**
+
+* CoinGecko API (Crypto & Metals)
+* ExchangeRate API (Currency Conversion)
 
 ---
 
 ## 🛠️ Installation & Setup
 
-### 1. Prerequisites
-- [Node.js](https://nodejs.org/) installed on your machine.
-- [XAMPP](https://www.apachefriends.org/) (for MySQL).
-- [MongoDB Community Server](https://www.mongodb.com/try/download/community) running locally.
+### 1️⃣ Prerequisites
 
-### 2. Database Configuration
-1. Start **Apache** and **MySQL** in XAMPP.
-2. Go to `http://localhost/phpmyadmin` and create a database named `dailyexpense`.
-3. Import the `PersonalExpenseTracker.sql` file provided in the root directory.
+* Node.js installed
+* XAMPP (for MySQL)
+* MongoDB Community Server running locally
 
-### 3. Environment Setup
-Create a `.env` file in the `/server` directory:
+---
+
+### 2️⃣ Database Setup
+
+1. Start Apache & MySQL via XAMPP
+2. Open: `http://localhost/phpmyadmin`
+3. Create database: `dailyexpense`
+4. Import: `PersonalExpenseTracker.sql`
+
+---
+
+### 3️⃣ Environment Configuration
+
+Create `.env` inside `/server`:
+
 ```env
 PORT=5001
 MONGO_URI=mongodb://localhost:27017/expenseTracker
@@ -69,23 +131,47 @@ MYSQL_DB=dailyexpense
 JWT_SECRET=fintrack_secret_321
 ```
 
-### 4. Running the App
-From the project root:
-```bash
-# Install dependencies for both frontend and backend
-npm run install:all
+---
 
-# Run both Client and Server concurrently
+### 4️⃣ Run Application
+
+```bash
+npm run install:all
 npm run dev
 ```
-The app will open at: `http://localhost:3000`
+
+📍 App runs at: `http://localhost:3000`
 
 ---
 
-## 🛡️ Integrity Check
-Use the **Integrity Check** tab in the sidebar to perform a deep scan of your data synchronization between MongoDB and your local profile. It verifies that your User ID matches perfectly every time.
+## 🛡️ Data Integrity Check
+
+* Built-in **Integrity Check Module**
+* Ensures consistency between MongoDB & user profile
+* Verifies user identity mapping and data synchronization
 
 ---
 
-## 📄 License
-Distributed under the MIT License. See `LICENSE.md` for more information.
+## 📸 Screenshots (Add Here)
+
+> Add dashboard, charts, and FinBot UI screenshots for better impact
+
+---
+
+## 🌐 Future Enhancements
+
+* 📱 Mobile App (React Native)
+* 🤖 Advanced ML-based expense prediction
+* 📊 Portfolio analytics dashboard
+* 🔔 Smart alerts & anomaly detection
+* 🌍 Cloud deployment (AWS / Vercel)
+
+---
+
+## 👨‍💻 Author
+
+**Swyam Arora**
+🎓 CSE (AI & ML), Chandigarh University
+🔗 https://github.com/Swyam17
+
+---
