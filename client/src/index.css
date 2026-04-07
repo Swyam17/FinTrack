@@ -200,7 +200,26 @@ td {
 .expense-text { color: #ef4444; }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* Dynamic Price Movements */
+@keyframes priceUp {
+  0% { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+  100% { background: transparent; }
+}
+
+@keyframes priceDown {
+  0% { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+  100% { background: transparent; }
+}
+
+.price-flash-up {
+  animation: priceUp 1.5s ease-out;
+  border-radius: 4px;
+}
+
+.price-flash-down {
+  animation: priceDown 1.5s ease-out;
+  border-radius: 4px;
+}
+

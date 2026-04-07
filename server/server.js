@@ -77,6 +77,7 @@ const ExpenseSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     type: { type: String, enum: ['income', 'expense'], default: 'expense' },
     currency: { type: String, default: 'USD' },
+    units: { type: Number, default: 0 },
     hash: { type: String } // Blockchain transaction hash
 });
 const Expense = mongoose.model('Expense', ExpenseSchema);
@@ -175,9 +176,9 @@ app.get('/api/expenses', authenticateToken, async (req, res) => {
 });
 
 app.post('/api/expenses', authenticateToken, async (req, res) => {
-    const { title, amount, category, date, type, currency } = req.body;
+    const { title, amount, category, date, type, currency, units } = req.body;
     try {
-        const transData = { userId: String(req.user.id), title, amount, category, date: date || new Date(), type: type || 'expense', currency: currency || 'USD' };
+        const transData = { userId: String(req.user.id), title, amount, category, date: date || new Date(), type: type || 'expense', currency: currency || 'USD', units: units || 0 };
         const newExpense = new Expense({
             ...transData,
             hash: generateHash({ ...transData, timestamp: Date.now() }) 
@@ -256,6 +257,98 @@ app.get('/api/monthly-stats', authenticateToken, async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+app.get('/api/analytics', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id.toString();
+        
+        // 1. Get Monthly Trends (Income vs Expense)
+        const monthlyStats = await Expense.aggregate([
+            { $match: { userId: userId } },
+            { $group: {
+                _id: { 
+                    month: { $month: "$date" },
+                    year: { $year: "$date" },
+                    type: "$type"
+                },
+                total: { $sum: "$amount" }
+            }},
+            { $sort: { "_id.year": 1, "_id.month": 1 } }
+        ]);
+
+        // 2. Risk Scoring: Savings risk level
+        const totals = await Expense.aggregate([
+            { $match: { userId: userId } },
+            { $group: {
+                _id: null,
+                totalIncome: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
+                totalExpense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
+            }}
+        ]);
+        
+        const income = totals[0]?.totalIncome || 0;
+        const expense = totals[0]?.totalExpense || 0;
+        const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
+        
+        let riskScore = 0;
+        let riskLevel = "Stable";
+        
+        if (income === 0 && expense > 0) {
+            riskScore = 100;
+            riskLevel = "Critical (No Income)";
+        } else if (savingsRate < 0) {
+            riskScore = 90;
+            riskLevel = "High (Overspending)";
+        } else if (savingsRate < 10) {
+            riskScore = 60;
+            riskLevel = "Moderate (Low Savings)";
+        } else if (savingsRate < 20) {
+            riskScore = 30;
+            riskLevel = "Low";
+        } else {
+            riskScore = 10;
+            riskLevel = "Very Low (Healthy)";
+        }
+
+        // 3. Predict Future Expenses (Linear Regression)
+        const expenseHistory = monthlyStats
+            .filter(d => d._id.type === 'expense')
+            .map((d, i) => ({ x: i, y: d.total }));
+        
+        let predictedExpense = 0;
+        if (expenseHistory.length >= 2) {
+            const n = expenseHistory.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+            expenseHistory.forEach(point => {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumXX += point.x * point.x;
+            });
+            const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const b = (sumY - m * sumX) / n;
+            predictedExpense = m * n + b;
+        } else if (expenseHistory.length === 1) {
+            predictedExpense = expenseHistory[0].y;
+        }
+
+        res.json({
+            monthlyStats,
+            risk: {
+                score: Math.min(100, Math.max(0, riskScore)),
+                level: riskLevel,
+                savingsRate: savingsRate.toFixed(2)
+            },
+            prediction: {
+                nextMonthExpense: Math.max(0, predictedExpense).toFixed(2)
+            }
+        });
+    } catch (err) {
+        console.error("Analytics Error:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // --- Leaderboard Routes ---
 app.get('/api/leaderboard', async (req, res) => {
     try {
