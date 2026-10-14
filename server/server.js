@@ -1,134 +1,73 @@
 const express = require('express');
-const mongoose = require('mongoose');
-const mysql = require('mysql2/promise');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
+const storage = require('./storage');
 
 const app = express();
 app.use(express.json());
 app.use(cors());
 
-// --- Database Connections ---
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/expenseTracker';
-const jwtSecret = process.env.JWT_SECRET || 'supersecretkey';
+const jwtSecret = process.env.JWT_SECRET || 'fintrack_secret_321';
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error('MongoDB error:', err));
-
-// MySQL connection pool singleton
-let pool;
-const getPool = async () => {
-    if (pool) return pool;
-    try {
-        pool = await mysql.createPool({
-            host: process.env.MYSQL_HOST || 'localhost',
-            user: process.env.MYSQL_USER || 'root',
-            password: process.env.MYSQL_PASSWORD || '',
-            database: process.env.MYSQL_DB || 'dailyexpense',
-            port: process.env.MYSQL_PORT || 3306,
-            waitForConnections: true,
-            connectionLimit: 10,
-            queueLimit: 0,
-            ssl: process.env.MYSQL_SSL ? JSON.parse(process.env.MYSQL_SSL) : undefined
-        });
-
-        // --- AUTOMATED SCHEMA INITIALIZATION ---
-        try {
-            // Ensure users table exists
-            await pool.execute(`
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id INT AUTO_INCREMENT PRIMARY KEY,
-                    firstname VARCHAR(50) NOT NULL,
-                    lastname VARCHAR(50) NOT NULL,
-                    email VARCHAR(100) UNIQUE NOT NULL,
-                    password VARCHAR(255) NOT NULL,
-                    optInLeaderboard TINYINT(1) DEFAULT 0
-                )
-            `);
-            
-            // Fix legacy issues/updates
-            await pool.execute('ALTER TABLE users MODIFY password VARCHAR(255)');
-            await pool.execute('ALTER TABLE users ADD COLUMN IF NOT EXISTS optInLeaderboard TINYINT(1) DEFAULT 0');
-            
-            console.log('MySQL: Database Schema Verified & Updated Successfully');
-        } catch (schemaErr) {
-            console.warn('MySQL Schema Check Warning (May already be updated):', schemaErr.message);
-        }
-
-        console.log('MySQL Pool Created Successfully');
-        return pool;
-    } catch (err) {
-        console.error('MySQL init error:', err);
-        throw new Error('Database connection failed. Check your environment variables.');
-    }
-};
-
-const crypto = require('crypto');
-
-// --- MongoDB Models ---
-const ExpenseSchema = new mongoose.Schema({
-    userId: { type: String, required: true },
-    title: { type: String, required: true },
-    amount: { type: Number, required: true },
-    category: { type: String, required: true },
-    date: { type: Date, default: Date.now },
-    type: { type: String, enum: ['income', 'expense'], default: 'expense' },
-    currency: { type: String, default: 'USD' },
-    units: { type: Number, default: 0 },
-    hash: { type: String } // Blockchain transaction hash
+// Initialize storage connections
+storage.init().catch(err => {
+    console.error('Storage initialization notice:', err.message);
 });
-const Expense = mongoose.model('Expense', ExpenseSchema);
 
-// Helper for hashing
-const generateHash = (data) => {
-    return crypto.createHash('sha256').update(JSON.stringify(data)).digest('hex');
-};
-
-// --- Middleware ---
+// Middleware
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    if (!token) return res.sendStatus(401);
+    if (!token) return res.status(401).json({ message: 'Authentication token required' });
 
     jwt.verify(token, jwtSecret, (err, user) => {
-        if (err) return res.sendStatus(403);
+        if (err) return res.status(403).json({ message: 'Invalid or expired token' });
         req.user = user;
         next();
     });
 };
 
+// --- Auth Routes ---
 app.post('/api/auth/register', async (req, res) => {
     const { firstname, lastname, email, password } = req.body;
+    if (!firstname || !email || !password) {
+        return res.status(400).json({ error: 'Please provide firstname, email, and password.' });
+    }
     try {
-        const db = await getPool();
-        const hashedPassword = await bcrypt.hash(password, 10);
-        const [result] = await db.execute(
-            'INSERT INTO users (firstname, lastname, email, password) VALUES (?, ?, ?, ?)',
-            [firstname, lastname, email, hashedPassword]
-        );
-        res.status(201).json({ message: 'User registered', userId: result.insertId });
+        const result = await storage.registerUser({ firstname, lastname: lastname || '', email, password });
+        res.status(201).json({ message: 'User registered', userId: result.userId });
     } catch (err) {
         console.error('Register Error:', err);
-        res.status(500).json({ error: "Failed to register. " + err.message });
+        res.status(400).json({ error: err.message || 'Failed to register.' });
     }
 });
 
 app.post('/api/auth/login', async (req, res) => {
     const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password required' });
+    }
     try {
-        const db = await getPool();
-        const [rows] = await db.execute('SELECT * FROM users WHERE email = ?', [email]);
-        if (rows.length === 0) return res.status(401).json({ message: 'Invalid credentials' });
-        
-        const user = rows[0];
+        const user = await storage.findUserByEmail(email);
+        if (!user) return res.status(401).json({ message: 'Invalid credentials' });
+
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) return res.status(401).json({ message: 'Invalid credentials' });
 
-        const token = jwt.sign({ id: user.user_id, email: user.email }, jwtSecret);
-        res.json({ token, user: { id: user.user_id, name: `${user.firstname} ${user.lastname}`, email: user.email } });
+        const token = jwt.sign({ id: user.user_id, email: user.email }, jwtSecret, { expiresIn: '7d' });
+        res.json({
+            token,
+            user: {
+                id: user.user_id,
+                name: `${user.firstname} ${user.lastname || ''}`.trim(),
+                firstname: user.firstname,
+                email: user.email
+            }
+        });
     } catch (err) {
         console.error('Login Error:', err);
         res.status(500).json({ error: err.message });
@@ -137,23 +76,24 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/forgot-password', async (req, res) => {
     const { email, password } = req.body;
+    if (!email || !password) {
+        return res.status(400).json({ message: 'Email and new password required' });
+    }
     try {
-        const db = await getPool();
         const hashedPassword = await bcrypt.hash(password, 10);
-        const [result] = await db.execute('UPDATE users SET password = ? WHERE email = ?', [hashedPassword, email]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'User not found' });
+        const success = await storage.updatePassword(email, hashedPassword);
+        if (!success) return res.status(404).json({ message: 'User not found' });
         res.json({ message: 'Password updated successfully! Please login with your new password.' });
     } catch (err) {
         console.error('Forgot Password Error:', err);
-        res.status(500).json({ error: "Failed to reset password. " + err.message });
+        res.status(500).json({ error: 'Failed to reset password. ' + err.message });
     }
 });
 
 app.post('/api/auth/leaderboard/opt-in', authenticateToken, async (req, res) => {
     const { optIn } = req.body;
     try {
-        const db = await getPool();
-        await db.execute('UPDATE users SET optInLeaderboard = ? WHERE user_id = ?', [optIn ? 1 : 0, req.user.id]);
+        await storage.setLeaderboardOptIn(req.user.id, optIn);
         res.json({ message: 'Preference updated' });
     } catch (err) {
         console.error('Opt-in Error:', err);
@@ -161,247 +101,144 @@ app.post('/api/auth/leaderboard/opt-in', authenticateToken, async (req, res) => 
     }
 });
 
-// --- Expense Routes (MongoDB) ---
+// --- Expense Routes ---
 app.get('/api/expenses', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id.toString();
-        // Match both string and numeric userId for backward compatibility
-        const expenses = await Expense.find({ userId: { $in: [userId, parseInt(userId)] } }).sort({ date: -1 });
-        console.log(`[GET /api/expenses] Found ${expenses.length} records for user: ${userId}`);
+        const expenses = await storage.getExpenses(req.user.id);
         res.json(expenses);
     } catch (err) {
-        console.error("[GET /api/expenses] Error:", err);
+        console.error('[GET /api/expenses] Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.post('/api/expenses', authenticateToken, async (req, res) => {
     const { title, amount, category, date, type, currency, units } = req.body;
+    if (!title || amount === undefined || isNaN(parseFloat(amount))) {
+        return res.status(400).json({ error: 'Valid title and amount required' });
+    }
     try {
-        const transData = { userId: String(req.user.id), title, amount, category, date: date || new Date(), type: type || 'expense', currency: currency || 'USD', units: units || 0 };
-        const newExpense = new Expense({
-            ...transData,
-            hash: generateHash({ ...transData, timestamp: Date.now() }) 
+        const newExpense = await storage.createExpense({
+            userId: req.user.id,
+            title,
+            amount,
+            category: category || 'Others',
+            date,
+            type,
+            currency,
+            units
         });
-        await newExpense.save();
         res.status(201).json(newExpense);
     } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
-});
-
-app.get('/api/stats', authenticateToken, async (req, res) => {
-    try {
-        const userId = req.user.id.toString();
-        const numericId = parseInt(userId);
-        
-        console.log(`[GET /api/stats] Fetching for userId: ${userId} (${numericId})`);
-
-        const totals = await Expense.aggregate([
-            { $match: { userId: { $in: [userId, numericId] } } },
-            { $group: {
-                _id: null,
-                totalIncome: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-                totalExpense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
-            }}
-        ]);
-
-        const categoryWise = await Expense.aggregate([
-            { $match: { userId: { $in: [userId, numericId] } } },
-            { $group: {
-                _id: '$category',
-                total: { $sum: '$amount' }
-            }}
-        ]);
-
-        console.log(`[GET /api/stats] Calculated income: ${totals[0]?.totalIncome || 0}, expense: ${totals[0]?.totalExpense || 0}`);
-
-        res.json({
-            categoryWise,
-            totalIncome: totals[0]?.totalIncome || 0,
-            totalExpense: totals[0]?.totalExpense || 0
-        });
-    } catch (err) {
-        console.error("[GET /api/stats] Error:", err);
+        console.error('[POST /api/expenses] Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.delete('/api/expenses/:id', authenticateToken, async (req, res) => {
     try {
-        const result = await Expense.findOneAndDelete({ _id: req.params.id, userId: req.user.id.toString() });
+        const result = await storage.deleteExpense(req.params.id, req.user.id);
         if (!result) return res.status(404).json({ message: 'Transaction not found' });
         res.json({ message: 'Transaction deleted' });
     } catch (err) {
+        console.error('[DELETE /api/expenses/:id] Error:', err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/stats', authenticateToken, async (req, res) => {
+    try {
+        const stats = await storage.getStats(req.user.id);
+        res.json(stats);
+    } catch (err) {
+        console.error('[GET /api/stats] Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.get('/api/monthly-stats', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id;
-        const monthlyStats = await Expense.aggregate([
-            { $match: { userId: userId.toString() } },
-            { $group: {
-                _id: { 
-                    month: { $month: "$date" },
-                    year: { $year: "$date" },
-                    type: "$type"
-                },
-                total: { $sum: "$amount" }
-            }},
-            { $sort: { "_id.year": 1, "_id.month": 1 } }
-        ]);
+        const monthlyStats = await storage.getMonthlyStats(req.user.id);
         res.json(monthlyStats);
     } catch (err) {
+        console.error('[GET /api/monthly-stats] Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.get('/api/analytics', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id.toString();
-        
-        // 1. Get Monthly Trends (Income vs Expense)
-        const monthlyStats = await Expense.aggregate([
-            { $match: { userId: userId } },
-            { $group: {
-                _id: { 
-                    month: { $month: "$date" },
-                    year: { $year: "$date" },
-                    type: "$type"
-                },
-                total: { $sum: "$amount" }
-            }},
-            { $sort: { "_id.year": 1, "_id.month": 1 } }
-        ]);
-
-        // 2. Risk Scoring: Savings risk level
-        const totals = await Expense.aggregate([
-            { $match: { userId: userId } },
-            { $group: {
-                _id: null,
-                totalIncome: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-                totalExpense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
-            }}
-        ]);
-        
-        const income = totals[0]?.totalIncome || 0;
-        const expense = totals[0]?.totalExpense || 0;
-        const savingsRate = income > 0 ? ((income - expense) / income) * 100 : 0;
-        
-        let riskScore = 0;
-        let riskLevel = "Stable";
-        
-        if (income === 0 && expense > 0) {
-            riskScore = 100;
-            riskLevel = "Critical (No Income)";
-        } else if (savingsRate < 0) {
-            riskScore = 90;
-            riskLevel = "High (Overspending)";
-        } else if (savingsRate < 10) {
-            riskScore = 60;
-            riskLevel = "Moderate (Low Savings)";
-        } else if (savingsRate < 20) {
-            riskScore = 30;
-            riskLevel = "Low";
-        } else {
-            riskScore = 10;
-            riskLevel = "Very Low (Healthy)";
-        }
-
-        // 3. Predict Future Expenses (Linear Regression)
-        const expenseHistory = monthlyStats
-            .filter(d => d._id.type === 'expense')
-            .map((d, i) => ({ x: i, y: d.total }));
-        
-        let predictedExpense = 0;
-        if (expenseHistory.length >= 2) {
-            const n = expenseHistory.length;
-            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-            expenseHistory.forEach(point => {
-                sumX += point.x;
-                sumY += point.y;
-                sumXY += point.x * point.y;
-                sumXX += point.x * point.x;
-            });
-            const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-            const b = (sumY - m * sumX) / n;
-            predictedExpense = m * n + b;
-        } else if (expenseHistory.length === 1) {
-            predictedExpense = expenseHistory[0].y;
-        }
-
-        res.json({
-            monthlyStats,
-            risk: {
-                score: Math.min(100, Math.max(0, riskScore)),
-                level: riskLevel,
-                savingsRate: savingsRate.toFixed(2)
-            },
-            prediction: {
-                nextMonthExpense: Math.max(0, predictedExpense).toFixed(2)
-            }
-        });
+        const analytics = await storage.getAnalytics(req.user.id);
+        res.json(analytics);
     } catch (err) {
-        console.error("Analytics Error:", err);
+        console.error('[GET /api/analytics] Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
-// --- Leaderboard Routes ---
 app.get('/api/leaderboard', async (req, res) => {
     try {
-        const db = await getPool();
-        const [users] = await db.query('SELECT user_id AS id, firstname FROM users WHERE optInLeaderboard = 1');
-        const leaderboard = [];
- 
-        for (const user of users) {
-            const stats = await Expense.aggregate([
-                { $match: { userId: user.id.toString() } },
-                { $group: { 
-                    _id: null, 
-                    totalIncome: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
-                    totalExpense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
-                }}
-            ]);
- 
-            const s = stats[0] || { totalIncome: 0, totalExpense: 0 };
-            const savingPercent = s.totalIncome > 0 ? ((s.totalIncome - s.totalExpense) / s.totalIncome) * 100 : 0;
-            
-            leaderboard.push({
-                name: user.firstname,
-                savingPercent: Math.max(0, savingPercent).toFixed(2)
-            });
-        }
- 
-        res.json(leaderboard.sort((a, b) => b.savingPercent - a.savingPercent));
+        const leaderboard = await storage.getLeaderboard();
+        res.json(leaderboard);
     } catch (err) {
+        console.error('[GET /api/leaderboard] Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
 app.get('/api/debug', authenticateToken, async (req, res) => {
     try {
-        const userId = req.user.id.toString();
-        const count = await Expense.countDocuments({ userId: userId });
-        const sample = await Expense.findOne({ userId: userId });
-        const allSample = await Expense.findOne({});
-        
-        res.json({
-            loggedInUserId: userId,
-            matchCount: count,
-            sampleForUser: sample,
-            anySampleInDb: allSample
-        });
+        const debugInfo = await storage.getDebug(req.user.id);
+        res.json(debugInfo);
     } catch (err) {
+        console.error('[GET /api/debug] Error:', err);
         res.status(500).json({ error: err.message });
     }
 });
 
+// Serve frontend build if available (production mode / standalone)
+const clientDist = path.join(__dirname, '../client/dist');
+if (fs.existsSync(clientDist)) {
+    app.use(express.static(clientDist));
+    app.get('*', (req, res, next) => {
+        if (req.path.startsWith('/api')) return next();
+        res.sendFile(path.join(clientDist, 'index.html'));
+    });
+}
+
+const os = require('os');
+const getNetworkIPs = () => {
+    const interfaces = os.networkInterfaces();
+    const ips = [];
+    for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+            if (iface.family === 'IPv4' && !iface.internal) {
+                ips.push({ name, address: iface.address });
+            }
+        }
+    }
+    return ips;
+};
+
 const PORT = process.env.PORT || 5001;
 if (require.main === module) {
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    app.listen(PORT, '0.0.0.0', () => {
+        const networkIPs = getNetworkIPs();
+        console.log(`\n==========================================================`);
+        console.log(`  🚀 FINTRACK IS READY FOR MULTI-DEVICE ACCESS!`);
+        console.log(`==========================================================`);
+        console.log(`  ▶ Local (This Device):`);
+        console.log(`    - Web App:            http://localhost:${PORT}`);
+        console.log(`    - Dev Server:         http://localhost:3000`);
+        console.log(`\n  ▶ Network Access (Phones, Tablets & PCs on Wi-Fi):`);
+        networkIPs.forEach(net => {
+            console.log(`    - [${net.name}]: http://${net.address}:${PORT}`);
+            console.log(`      (Dev Server: http://${net.address}:3000)`);
+        });
+        console.log(`\n  ▶ Public Access (Any Device Worldwide):`);
+        console.log(`    - Run 'npm run share' for an instant public HTTPS URL`);
+        console.log(`==========================================================\n`);
+    });
 }
 
 module.exports = app;

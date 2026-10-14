@@ -1,0 +1,186 @@
+{
+  "users": [
+    {
+      "user_id": 1,
+      "firstname": "Alex",
+      "lastname": "Morgan",
+      "email": "demo@fintrack.com",
+      "password": "$2a$10$LNS3r59lG5DkBYM2k0kxwe5Cfhp85cVeHHUXBoaQmSI6BjMt7M5Vq",
+      "optInLeaderboard": 1
+    },
+    {
+      "user_id": 2,
+      "firstname": "Sarah",
+      "lastname": "Connor",
+      "email": "sarah@fintrack.com",
+      "password": "$2a$10$LNS3r59lG5DkBYM2k0kxwe5Cfhp85cVeHHUXBoaQmSI6BjMt7M5Vq",
+      "optInLeaderboard": 1
+    },
+    {
+      "user_id": 3,
+      "firstname": "John",
+      "lastname": "Doe",
+      "email": "john@example.com",
+      "password": "$2a$10$aZyQda0lCyKuZBbs99qGv.TNJE/4OXDesIk94y1STZqVDZwLhj3O6",
+      "optInLeaderboard": 0
+    }
+  ],
+  "expenses": [
+    {
+      "_id": "6972e1a9d07beacb340f7dca",
+      "userId": "1",
+      "title": "Monthly Salary",
+      "amount": 5200,
+      "category": "Salary",
+      "date": "2026-09-30T18:30:00.000Z",
+      "type": "income",
+      "currency": "USD",
+      "units": 0,
+      "hash": "011421030cb524f9d0d413087b720b5dbee3c3ee4417800c9a5eedbaffddb480"
+    },
+    {
+      "_id": "56f1f58b5200d86b922b9abd",
+      "userId": "1",
+      "title": "Apartment Rent",
+      "amount": 1400,
+      "category": "Rent",
+      "date": "2026-10-02T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0,
+      "hash": "29af8fffc80db0372afd511de219c82ec5ee1ea4ae6bac30df6bcec5ab8791cd"
+    },
+    {
+      "_id": "f168a446e0dc6175e9bc77ad",
+      "userId": "1",
+      "title": "Supermarket Groceries",
+      "amount": 340,
+      "category": "Food",
+      "date": "2026-10-05T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0,
+      "hash": "a7281f41737773d0b4e98a40a23cf037574a89cde7d03b32df0766242a35d458"
+    },
+    {
+      "_id": "9c71259c6b57683faaf8181f",
+      "userId": "1",
+      "title": "Invested in PAX GOLD",
+      "amount": 595,
+      "category": "Gold",
+      "date": "2026-10-07T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0.25,
+      "hash": "151162202430c1a338af0fbb73de7d187d8a314fcc7d07bb6550c2901f3109fa"
+    },
+    {
+      "_id": "f8fccb412cb76020ab90fd53",
+      "userId": "1",
+      "title": "Invested in BITCOIN",
+      "amount": 450,
+      "category": "Crypto",
+      "date": "2026-10-09T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0.0055,
+      "hash": "9a2b0991c6e50f927a81135cb146fcee48d0980cec3a4878dc7ae7bad114d650"
+    },
+    {
+      "_id": "500e080f3f465e7425fcab9c",
+      "userId": "1",
+      "title": "Tech Gadgets & Cloud",
+      "amount": 180,
+      "category": "Entertainment",
+      "date": "2026-10-11T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0,
+      "hash": "f8f15e39f41e894847a7573c203ad88e5d938dbc6f5eefa5f808b5d12a40b58d"
+    },
+    {
+      "_id": "0d56e4d6eb9e434e0c29262a",
+      "userId": "1",
+      "title": "Monthly Salary",
+      "amount": 5000,
+      "category": "Salary",
+      "date": "2026-09-14T18:30:00.000Z",
+      "type": "income",
+      "currency": "USD",
+      "units": 0,
+      "hash": "8853b2197e3bcf1cb118fa81478c95e5017b5d9d264629881430c59e492ba249"
+    },
+    {
+      "_id": "c76ef0acdbbba100d8b417d8",
+      "userId": "1",
+      "title": "Apartment Rent",
+      "amount": 1400,
+      "category": "Rent",
+      "date": "2026-09-14T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0,
+      "hash": "7014fab5b82b07d3cae2268e5c0fe7af12da308374f995707b2c38d42640c3e2"
+    },
+    {
+      "_id": "2b1000f6b050e2b4e203fc23",
+      "userId": "1",
+      "title": "Groceries & Dining",
+      "amount": 620,
+      "category": "Food",
+      "date": "2026-09-14T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0,
+      "hash": "bb188c8a55f7db3edd2e60ad705e4bc182b0648863fd480ac262ee515448ff6c"
+    },
+    {
+      "_id": "4f7b37b2be814d6bea0b57c5",
+      "userId": "1",
+      "title": "Monthly Salary",
+      "amount": 4800,
+      "category": "Salary",
+      "date": "2026-08-09T18:30:00.000Z",
+      "type": "income",
+      "currency": "USD",
+      "units": 0,
+      "hash": "16f820ad1d240a220a097b195ddb6a145c1afffdda8ea0cbb678dedfd6451e07"
+    },
+    {
+      "_id": "793e0df363a4d996c0641a44",
+      "userId": "1",
+      "title": "Living Expenses",
+      "amount": 1950,
+      "category": "Rent",
+      "date": "2026-08-09T18:30:00.000Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0,
+      "hash": "70970e622962381c944e1df768da85637a9511b6b4c89bc9426ef1e783a357a0"
+    },
+    {
+      "_id": "b5b005190c4b6cfe33c2c142",
+      "userId": "2",
+      "title": "Design Consulting Income",
+      "amount": 4600,
+      "category": "Salary",
+      "date": "2026-10-14T06:21:54.636Z",
+      "type": "income",
+      "currency": "USD",
+      "units": 0,
+      "hash": "0ec31a05dc26b6d8a4c8e880e7ec873e6b58451463fbabbf0b30740f38c6657e"
+    },
+    {
+      "_id": "75b051f7001949e4c508f0e9",
+      "userId": "2",
+      "title": "Studio Rent & Living",
+      "amount": 1250,
+      "category": "Rent",
+      "date": "2026-10-14T06:21:54.636Z",
+      "type": "expense",
+      "currency": "USD",
+      "units": 0,
+      "hash": "7c011ca7e3b9c350b83aee0c32651ab14f071e2e1dad0e28477dc3ffe33e58bd"
+    }
+  ]
+}

@@ -34,7 +34,14 @@ const StatCard = ({ title, value, colorClass, icon: Icon, currency }) => (
 );
 
 const App = () => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => {
+        try {
+            const saved = localStorage.getItem('user');
+            return saved ? JSON.parse(saved) : null;
+        } catch {
+            return null;
+        }
+    });
     const [token, setToken] = useState(localStorage.getItem('token'));
     const [transactions, setTransactions] = useState([]);
     const [stats, setStats] = useState({ totalIncome: 0, totalExpense: 0, categoryWise: [] });
@@ -274,6 +281,7 @@ const App = () => {
             if (authMode === 'login') {
                 const res = await axios.post('/api/auth/login', { email, password });
                 localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data.user));
                 setToken(res.data.token);
                 setUser(res.data.user);
             } else if (authMode === 'register') {
@@ -294,6 +302,7 @@ const App = () => {
 
     const handleLogout = () => {
         localStorage.removeItem('token');
+        localStorage.removeItem('user');
         setToken(null);
         setUser(null);
     };
@@ -549,6 +558,19 @@ For long-term security, we also highly recommend checking out Tata AIA Insurance
                         <button className="btn btn-primary" style={{ width: '100%', marginTop: '16px' }}>
                             {authMode === 'login' ? 'Login' : authMode === 'register' ? 'Sign Up' : 'Update Password'}
                         </button>
+                        {authMode === 'login' && (
+                            <button 
+                                type="button" 
+                                className="btn" 
+                                style={{ width: '100%', marginTop: '10px', background: 'rgba(255,255,255,0.06)', border: '1px solid var(--border)', color: '#cbd5e1', fontSize: '0.9rem', justifyContent: 'center' }}
+                                onClick={() => {
+                                    setEmail('demo@fintrack.com');
+                                    setPassword('password123');
+                                }}
+                            >
+                                ⚡ Use Demo Account
+                            </button>
+                        )}
                     </form>
                     
                     <div style={{ marginTop: '24px', textAlign: 'center' }}>
@@ -620,7 +642,7 @@ For long-term security, we also highly recommend checking out Tata AIA Insurance
             <main className="main-content">
                 <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
                     <div>
-                        <h1 style={{ fontSize: '1.8rem' }}>Welcome Back, User</h1>
+                        <h1 style={{ fontSize: '1.8rem' }}>Welcome Back, {user?.name || user?.firstname || 'User'}</h1>
                         <p style={{ color: 'var(--text-dim)' }}>Your secure financial portal is ready.</p>
                     </div>
                     <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
@@ -1059,7 +1081,7 @@ For long-term security, we also highly recommend checking out Tata AIA Insurance
                                 </div>
                             </div>
                             <div className="glass-card" style={{ padding: '24px', background: 'rgba(255,255,255,0.02)' }}>
-                                <p><strong>Logged-In User ID:</strong> {token ? JSON.parse(atob(token.split('.')[1])).id : 'N/A'}</p>
+                                <p><strong>Logged-In User ID:</strong> {token ? (() => { try { return JSON.parse(atob(token.split('.')[1])).id; } catch { return user?.id || 'N/A'; } })() : 'N/A'}</p>
                                 <p style={{ marginTop: '16px' }}><strong>Status:</strong> {transactions.length > 0 ? '✅ Data records found for this user' : '❌ No data records found for this user'}</p>
                                 <p style={{ marginTop: '8px' }}>Total Records: {transactions.length}</p>
                                 <div style={{ marginTop: '32px', padding: '20px', border: '1px solid var(--border)', borderRadius: '12px' }}>
@@ -1069,6 +1091,68 @@ For long-term security, we also highly recommend checking out Tata AIA Insurance
                                         await Promise.all([fetchData(), fetchMarketData()]);
                                         alert('Deep sync complete! All records and market prices updated.');
                                     }}>Sync Database Now</button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+
+                    {activePage === 'profile' && (
+                        <motion.div key="profile" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="glass-card" style={{ padding: '32px' }}>
+                            <div style={{ display: 'flex', gap: '20px', alignItems: 'center', marginBottom: '32px' }}>
+                                <div style={{ 
+                                    width: '72px', height: '72px', borderRadius: '50%', 
+                                    background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontSize: '1.8rem', fontWeight: 800, color: 'white',
+                                    boxShadow: '0 8px 24px rgba(131, 56, 236, 0.4)'
+                                }}>
+                                    {(user?.firstname?.[0] || 'U').toUpperCase()}
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.6rem', marginBottom: '4px' }}>{user?.name || user?.firstname || 'FinTrack Member'}</h2>
+                                    <p style={{ color: 'var(--text-dim)', fontSize: '0.95rem' }}>{user?.email || 'Logged In User'}</p>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+                                <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)' }}>
+                                    <h4 style={{ color: 'var(--text-dim)', marginBottom: '8px', fontSize: '0.85rem' }}>ACCOUNT ID</h4>
+                                    <p style={{ fontSize: '1.2rem', fontWeight: 700 }}>#{user?.id || '1'}</p>
+                                </div>
+                                <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)' }}>
+                                    <h4 style={{ color: 'var(--text-dim)', marginBottom: '8px', fontSize: '0.85rem' }}>TOTAL TRANSACTIONS</h4>
+                                    <p style={{ fontSize: '1.2rem', fontWeight: 700 }}>{transactions.length} Records</p>
+                                </div>
+                                <div className="glass-card" style={{ padding: '20px', background: 'rgba(255,255,255,0.03)' }}>
+                                    <h4 style={{ color: 'var(--text-dim)', marginBottom: '8px', fontSize: '0.85rem' }}>GLOBAL COMPETITION</h4>
+                                    <p style={{ fontSize: '1.2rem', fontWeight: 700, color: isOptedIn ? '#10b981' : 'var(--text-dim)' }}>
+                                        {isOptedIn ? '🏆 Opted In' : '❌ Opted Out'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="glass-card" style={{ padding: '24px', background: 'rgba(255,255,255,0.02)' }}>
+                                <h3 style={{ marginBottom: '16px' }}>Account Settings</h3>
+                                <p style={{ color: 'var(--text-dim)', fontSize: '0.9rem', marginBottom: '20px' }}>
+                                    Update your security credentials or manage your leaderboard participation.
+                                </p>
+                                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                                    <button className="btn" style={{ background: isOptedIn ? '#ef4444' : '#10b981', color: 'white' }} onClick={toggleLeaderboard}>
+                                        {isOptedIn ? 'Opt Out of Leaderboard' : 'Opt In to Leaderboard'}
+                                    </button>
+                                    <button className="btn" style={{ background: 'rgba(255,255,255,0.08)', color: 'white' }} onClick={() => {
+                                        const newPass = window.prompt('Enter new password:');
+                                        if (newPass) {
+                                            axios.post('/api/auth/forgot-password', { email: user?.email, password: newPass })
+                                                .then(() => alert('Password updated successfully!'))
+                                                .catch(err => alert('Failed to update password: ' + (err.response?.data?.error || err.message)));
+                                        }
+                                    }}>
+                                        Change Password
+                                    </button>
+                                    <button className="btn" style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }} onClick={handleLogout}>
+                                        <LogOut size={16} /> Sign Out
+                                    </button>
                                 </div>
                             </div>
                         </motion.div>
